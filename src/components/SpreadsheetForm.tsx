@@ -1,23 +1,61 @@
-import { type SubmitEvent } from "react";
-import { Field, FieldLabel } from "@/components/ui/field.tsx";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
+import { Field, FieldLabel, FieldError } from "@/components/ui/field.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Upload } from "lucide-react";
 
-const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
-  e.preventDefault();
+const SPREADSHEET_TYPES = [
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+
+const formSchema = z.object({
+  spreadsheet: z
+    .instanceof(File, { error: "Please choose a file to upload." })
+    .refine((file) => {
+      return SPREADSHEET_TYPES.includes(file.type);
+    }, "File must be an Excel spreadsheet."),
+});
+
+const onSubmit = (data: z.infer<typeof formSchema>) => {
   console.log("form submitted");
+  console.log(data);
 };
 
 export default function SpreadsheetForm() {
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      spreadsheet: undefined,
+    },
+  });
+
   return (
     <section className={"space-y-4"}>
       <h2 className={"text-xl"}>Spreadsheet Form</h2>
-      <form className={"space-y-4"} onSubmit={handleSubmit}>
-        <Field>
-          <FieldLabel htmlFor={"spreadsheet"}>Upload Spreadsheet</FieldLabel>
-          <Input id={"spreadsheet"} type={"file"} />
-        </Field>
+      <form className={"space-y-4"} onSubmit={form.handleSubmit(onSubmit)}>
+        <Controller
+          name={"spreadsheet"}
+          control={form.control}
+          render={({ field: { onChange, name, ref }, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={"spreadsheet"}>
+                Upload Spreadsheet
+              </FieldLabel>
+              <Input
+                ref={ref}
+                name={name}
+                onChange={(e) => onChange(e.target.files?.[0])}
+                id={"spreadsheet"}
+                type={"file"}
+                aria-invalid={fieldState.invalid}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
         <div className={"flex justify-end"}>
           <Button type={"submit"}>
             Upload <Upload aria-hidden={true} />
