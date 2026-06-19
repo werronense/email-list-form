@@ -57,7 +57,13 @@ export default function SpreadsheetForm() {
           )}
         />
         <div className={"flex justify-end"}>
-          <Button type={"submit"}>
+          <Button
+            type={"submit"}
+            className={
+              !form.formState.isValid ? "opacity-50 cursor-not-allowed" : ""
+            }
+            aria-disabled={!form.formState.isValid}
+          >
             Upload <Upload aria-hidden={true} />
           </Button>
         </div>
