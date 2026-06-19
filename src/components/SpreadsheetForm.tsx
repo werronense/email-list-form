@@ -17,6 +17,10 @@ const formSchema = z.object({
     .refine((file) => {
       return SPREADSHEET_TYPES.includes(file.type);
     }, "File must be an Excel spreadsheet."),
+  column: z
+    .string({ error: "Please enter a column name." })
+    .min(1, { error: "Please enter a column name." })
+    .regex(/^[a-zA-Z0-9]+$/, { error: "Column name must be alphanumeric." }),
 });
 
 const onSubmit = (data: z.infer<typeof formSchema>) => {
@@ -29,6 +33,7 @@ export default function SpreadsheetForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       spreadsheet: undefined,
+      column: "",
     },
   });
 
@@ -51,6 +56,23 @@ export default function SpreadsheetForm() {
                 id={"spreadsheet"}
                 type={"file"}
                 aria-invalid={fieldState.invalid}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+        <Controller
+          name={"column"}
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={"column"}>Select email column</FieldLabel>
+              <Input
+                {...field}
+                id={"column"}
+                type={"text"}
+                aria-invalid={fieldState.invalid}
+                className={"max-w-24"}
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
