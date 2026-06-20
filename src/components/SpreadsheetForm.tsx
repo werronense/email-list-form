@@ -23,9 +23,15 @@ const formSchema = z.object({
     .min(1, { error: "Please enter a column name." })
     .regex(/^[a-zA-Z]+$/, { error: "Column name must be a letter." })
     .transform((data) => data.toUpperCase()),
+  row: z.coerce
+    .number({ error: "Please enter a row number." })
+    .min(1, { error: "Number must be greater than 0." }),
 });
 
-const onSubmit = async (data: z.infer<typeof formSchema>) => {
+type SchemaInput = z.input<typeof formSchema>;
+type SchemaOutput = z.output<typeof formSchema>;
+
+const onSubmit = async (data: SchemaOutput) => {
   const emails = await extractEmails(data);
 
   // todo: delete log statement
@@ -33,11 +39,12 @@ const onSubmit = async (data: z.infer<typeof formSchema>) => {
 };
 
 export default function SpreadsheetForm() {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<SchemaInput, any, SchemaOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       spreadsheet: undefined,
       column: "",
+      row: 1,
     },
   });
 
@@ -65,23 +72,46 @@ export default function SpreadsheetForm() {
             </Field>
           )}
         />
-        <Controller
-          name={"column"}
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={"column"}>Select email column</FieldLabel>
-              <Input
-                {...field}
-                id={"column"}
-                type={"text"}
-                aria-invalid={fieldState.invalid}
-                className={"max-w-24"}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+        <div className={"flex flex-col gap-4 md:flex-row"}>
+          <Controller
+            name={"column"}
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={"column"}>Select email column</FieldLabel>
+                <Input
+                  {...field}
+                  id={"column"}
+                  type={"text"}
+                  aria-invalid={fieldState.invalid}
+                  className={"max-w-24"}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+          <Controller
+            name={"row"}
+            control={form.control}
+            render={({ fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={"row"}>Select first row</FieldLabel>
+                <Input
+                  {...form.register("row")}
+                  id={"row"}
+                  type={"number"}
+                  aria-invalid={fieldState.invalid}
+                  className={"max-w-24"}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+        </div>
         <div className={"flex justify-end"}>
           <Button
             type={"submit"}
