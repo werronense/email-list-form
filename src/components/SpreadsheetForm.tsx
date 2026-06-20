@@ -5,6 +5,7 @@ import { Field, FieldLabel, FieldError } from "@/components/ui/field.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Upload } from "lucide-react";
+import { extractEmails } from "@/utils/spreadsheet.ts";
 
 const SPREADSHEET_TYPES = [
   "application/vnd.ms-excel",
@@ -20,12 +21,15 @@ const formSchema = z.object({
   column: z
     .string({ error: "Please enter a column name." })
     .min(1, { error: "Please enter a column name." })
-    .regex(/^[a-zA-Z0-9]+$/, { error: "Column name must be alphanumeric." }),
+    .regex(/^[a-zA-Z]+$/, { error: "Column name must be a letter." })
+    .transform((data) => data.toUpperCase()),
 });
 
-const onSubmit = (data: z.infer<typeof formSchema>) => {
-  console.log("form submitted");
-  console.log(data);
+const onSubmit = async (data: z.infer<typeof formSchema>) => {
+  const emails = await extractEmails(data);
+
+  // todo: delete log statement
+  console.log({ emails });
 };
 
 export default function SpreadsheetForm() {
