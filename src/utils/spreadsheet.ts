@@ -28,6 +28,7 @@ export const extractEmails = async (
   const rowIndex = row - 1;
 
   const rows = await readSheet(spreadsheet);
+  console.log({ rows });
 
   return rows.slice(rowIndex).flatMap((row) => String(row[colIndex] ?? ""));
 };
