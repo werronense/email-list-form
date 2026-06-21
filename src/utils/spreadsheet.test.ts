@@ -87,7 +87,7 @@ describe("extractEmails", () => {
     const data = { spreadsheet, column: "B", row: 1 };
     const emails = await extractEmails(data);
 
-    expect(emails).toEqual(["Header2", "test1@example.com"]);
+    expect(emails).toEqual(["", "test1@example.com"]);
   });
 
   test("handles row index <= 0", async () => {
@@ -98,11 +98,11 @@ describe("extractEmails", () => {
 
     const dataZero = { spreadsheet, column: "B", row: 0 };
     const emailsZero = await extractEmails(dataZero);
-    expect(emailsZero).toEqual(["Header2", "test1@example.com"]);
+    expect(emailsZero).toEqual(["", "test1@example.com"]);
 
     const dataNeg = { spreadsheet, column: "B", row: -1 };
     const emailsNeg = await extractEmails(dataNeg);
-    expect(emailsNeg).toEqual(["Header2", "test1@example.com"]);
+    expect(emailsNeg).toEqual(["", "test1@example.com"]);
   });
 
   test("handles empty spreadsheet", async () => {

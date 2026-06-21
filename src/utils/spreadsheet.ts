@@ -1,4 +1,5 @@
 import { readSheet } from "read-excel-file/browser";
+import { isValidEmail } from "@/utils/emails.ts";
 
 type ExtractEmailsInput = {
   spreadsheet: File;
@@ -29,5 +30,9 @@ export const extractEmails = async (
 
   const rows = await readSheet(spreadsheet);
 
-  return rows.slice(rowIndex).flatMap((row) => String(row[colIndex] ?? ""));
+  return rows.slice(rowIndex).flatMap((row) => {
+    const cell = row[colIndex];
+
+    return typeof cell === "string" && isValidEmail(cell) ? cell : "";
+  });
 };
