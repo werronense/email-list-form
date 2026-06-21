@@ -24,11 +24,10 @@ export const extractEmails = async (
 
   const colIndex = excelColumnToIndex(column);
 
-  // offset by one to zero-index
-  const rowIndex = row - 1;
+  // offset by one to zero-index with zero as minimum
+  const rowIndex = Math.max(0, row - 1);
 
   const rows = await readSheet(spreadsheet);
-  console.log({ rows });
 
   return rows.slice(rowIndex).flatMap((row) => String(row[colIndex] ?? ""));
 };

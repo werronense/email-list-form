@@ -13,16 +13,25 @@ type ReadSheetTargetOverload = <T, U = number>(
 const mockReadSheet = vi.mocked(readSheet as ReadSheetTargetOverload);
 
 describe("excelColumnToIndex", () => {
-  test("excelColumnToIndex converts single-letter column names", () => {
-    expect(excelColumnToIndex("A")).toBe(0);
-    expect(excelColumnToIndex("a")).toBe(0);
-    expect(excelColumnToIndex("Z")).toBe(25);
+  test.each([
+    ["A", 0],
+    ["a", 0],
+    ["Z", 25],
+    ["AA", 26],
+    ["AB", 27],
+    ["BB", 53],
+    ["ZZ", 701],
+    ["AAA", 702],
+  ])("converts %s to index %i", (column, expected) => {
+    expect(excelColumnToIndex(column)).toBe(expected);
   });
 
-  test("excelColumnToIndex converts multi-letter column names", () => {
-    expect(excelColumnToIndex("AA")).toBe(26);
-    expect(excelColumnToIndex("AB")).toBe(27);
-    expect(excelColumnToIndex("BB")).toBe(53);
+  test("handles empty string", () => {
+    expect(excelColumnToIndex("")).toBe(-1);
+  });
+
+  test("handles non-alphabetic characters", () => {
+    expect(excelColumnToIndex("1")).toBe(-16);
   });
 });
 
@@ -67,6 +76,56 @@ describe("extractEmails", () => {
     const emails = await extractEmails(data);
 
     expect(emails).toEqual(["email2@example.com", "email3@example.com"]);
+  });
+
+  test("starts from the first row when row = 1", async () => {
+    mockReadSheet.mockResolvedValueOnce([
+      ["Header1", "Header2", "Header3"],
+      ["data1", "test1@example.com", "other1"],
+    ]);
+
+    const data = { spreadsheet, column: "B", row: 1 };
+    const emails = await extractEmails(data);
+
+    expect(emails).toEqual(["Header2", "test1@example.com"]);
+  });
+
+  test("handles row index <= 0", async () => {
+    mockReadSheet.mockResolvedValue([
+      ["Header1", "Header2", "Header3"],
+      ["data1", "test1@example.com", "other1"],
+    ]);
+
+    const dataZero = { spreadsheet, column: "B", row: 0 };
+    const emailsZero = await extractEmails(dataZero);
+    expect(emailsZero).toEqual(["Header2", "test1@example.com"]);
+
+    const dataNeg = { spreadsheet, column: "B", row: -1 };
+    const emailsNeg = await extractEmails(dataNeg);
+    expect(emailsNeg).toEqual(["Header2", "test1@example.com"]);
+  });
+
+  test("handles empty spreadsheet", async () => {
+    mockReadSheet.mockResolvedValueOnce([]);
+
+    const data = { spreadsheet, column: "B", row: 1 };
+    const emails = await extractEmails(data);
+
+    expect(emails).toEqual([]);
+  });
+
+  test("handles inconsistent row lengths", async () => {
+    mockReadSheet.mockResolvedValueOnce([
+      ["Header1", "Header2"],
+      ["data1", "email1@example.com"],
+      ["data2"],
+      ["data3", "email3@example.com"],
+    ]);
+
+    const data = { spreadsheet, column: "B", row: 2 };
+    const emails = await extractEmails(data);
+
+    expect(emails).toEqual(["email1@example.com", "", "email3@example.com"]);
   });
 
   test("handles column index out of bounds", async () => {
