@@ -1,5 +1,6 @@
 import { readSheet } from "read-excel-file/browser";
-import { isValidEmail } from "@/utils/emails.ts";
+import { validateEmail } from "@/utils/emails.ts";
+import { type UploadedEmails } from "@/types/email";
 
 type ExtractEmailsInput = {
   spreadsheet: File;
@@ -18,21 +19,52 @@ export const excelColumnToIndex = (column: string): number => {
   return index - 1;
 };
 
+export const rowsToEmails = (colIndex: number) => {
+  const seenEmails = new Set<string>();
+
+  return (emails: UploadedEmails, row: unknown[]) => {
+    const cellValue = row[colIndex];
+
+    if (typeof cellValue !== "string") {
+      return emails;
+    }
+
+    const isValidEmail = validateEmail(cellValue);
+
+    if (seenEmails.has(cellValue)) {
+      if (isValidEmail) {
+        emails.duplicates.push(cellValue);
+      }
+      return emails;
+    }
+
+    seenEmails.add(cellValue);
+
+    if (isValidEmail) {
+      emails.valid.push(cellValue);
+    } else {
+      emails.invalid.push(cellValue);
+    }
+
+    return emails;
+  };
+};
+
 export const extractEmails = async (
   data: ExtractEmailsInput,
-): Promise<string[]> => {
+): Promise<UploadedEmails> => {
   const { spreadsheet, column, row } = data;
 
-  const colIndex = excelColumnToIndex(column);
-
-  // offset by one to zero-index with zero as minimum
+  // offset by 1 to zero-index, minumum index is 0
   const rowIndex = Math.max(0, row - 1);
+  const colIndex = excelColumnToIndex(column);
+  const rows = (await readSheet(spreadsheet))?.slice(rowIndex);
 
-  const rows = await readSheet(spreadsheet);
+  const emails: UploadedEmails = {
+    valid: [],
+    duplicates: [],
+    invalid: [],
+  };
 
-  return rows.slice(rowIndex).flatMap((row) => {
-    const cell = row[colIndex];
-
-    return typeof cell === "string" && isValidEmail(cell) ? cell : "";
-  });
+  return rows.reduce(rowsToEmails(colIndex), emails);
 };

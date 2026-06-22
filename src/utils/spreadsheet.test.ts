@@ -48,7 +48,11 @@ describe("extractEmails", () => {
     const data = { spreadsheet, column: "B", row: 2 };
     const emails = await extractEmails(data);
 
-    expect(emails).toEqual(["test1@example.com", "test2@example.com"]);
+    expect(emails).toEqual({
+      valid: ["test1@example.com", "test2@example.com"],
+      duplicates: [],
+      invalid: [],
+    });
   });
 
   test("handles empty cells correctly", async () => {
@@ -61,7 +65,11 @@ describe("extractEmails", () => {
     const data = { spreadsheet, column: "B", row: 2 };
     const emails = await extractEmails(data);
 
-    expect(emails).toEqual(["", "test3@example.com"]);
+    expect(emails).toEqual({
+      valid: ["test3@example.com"],
+      duplicates: [],
+      invalid: [""],
+    });
   });
 
   test("extracts emails from a different starting row", async () => {
@@ -75,7 +83,11 @@ describe("extractEmails", () => {
     const data = { spreadsheet, column: "B", row: 3 };
     const emails = await extractEmails(data);
 
-    expect(emails).toEqual(["email2@example.com", "email3@example.com"]);
+    expect(emails).toEqual({
+      valid: ["email2@example.com", "email3@example.com"],
+      duplicates: [],
+      invalid: [],
+    });
   });
 
   test("starts from the first row when row = 1", async () => {
@@ -87,7 +99,11 @@ describe("extractEmails", () => {
     const data = { spreadsheet, column: "B", row: 1 };
     const emails = await extractEmails(data);
 
-    expect(emails).toEqual(["", "test1@example.com"]);
+    expect(emails).toEqual({
+      valid: ["test1@example.com"],
+      duplicates: [],
+      invalid: ["Header2"],
+    });
   });
 
   test("handles row index <= 0", async () => {
@@ -98,11 +114,19 @@ describe("extractEmails", () => {
 
     const dataZero = { spreadsheet, column: "B", row: 0 };
     const emailsZero = await extractEmails(dataZero);
-    expect(emailsZero).toEqual(["", "test1@example.com"]);
+    expect(emailsZero).toEqual({
+      valid: ["test1@example.com"],
+      duplicates: [],
+      invalid: ["Header2"],
+    });
 
     const dataNeg = { spreadsheet, column: "B", row: -1 };
     const emailsNeg = await extractEmails(dataNeg);
-    expect(emailsNeg).toEqual(["", "test1@example.com"]);
+    expect(emailsNeg).toEqual({
+      valid: ["test1@example.com"],
+      duplicates: [],
+      invalid: ["Header2"],
+    });
   });
 
   test("handles empty spreadsheet", async () => {
@@ -111,7 +135,11 @@ describe("extractEmails", () => {
     const data = { spreadsheet, column: "B", row: 1 };
     const emails = await extractEmails(data);
 
-    expect(emails).toEqual([]);
+    expect(emails).toEqual({
+      valid: [],
+      duplicates: [],
+      invalid: [],
+    });
   });
 
   test("handles inconsistent row lengths", async () => {
@@ -125,7 +153,11 @@ describe("extractEmails", () => {
     const data = { spreadsheet, column: "B", row: 2 };
     const emails = await extractEmails(data);
 
-    expect(emails).toEqual(["email1@example.com", "", "email3@example.com"]);
+    expect(emails).toEqual({
+      valid: ["email1@example.com", "email3@example.com"],
+      duplicates: [],
+      invalid: [],
+    });
   });
 
   test("handles column index out of bounds", async () => {
@@ -137,7 +169,11 @@ describe("extractEmails", () => {
     const data = { spreadsheet, column: "Z", row: 2 };
     const emails = await extractEmails(data);
 
-    expect(emails).toEqual([""]);
+    expect(emails).toEqual({
+      valid: [],
+      duplicates: [],
+      invalid: [],
+    });
   });
 
   test("handles row index out of bounds", async () => {
@@ -149,6 +185,48 @@ describe("extractEmails", () => {
     const data = { spreadsheet, column: "B", row: 10 };
     const emails = await extractEmails(data);
 
-    expect(emails).toEqual([]);
+    expect(emails).toEqual({
+      valid: [],
+      duplicates: [],
+      invalid: [],
+    });
+  });
+
+  test("correctly handles duplicate emails", async () => {
+    mockReadSheet.mockResolvedValueOnce([
+      ["Header1", "Header2", "Header3"],
+      ["data1", "test1@example.com", "other1"],
+      ["data2", "test1@example.com", "other2"],
+      ["data3", "test2@example.com", "other3"],
+      ["data4", "test1@example.com", "other4"],
+    ]);
+
+    const data = { spreadsheet, column: "B", row: 2 };
+    const emails = await extractEmails(data);
+
+    expect(emails).toEqual({
+      valid: ["test1@example.com", "test2@example.com"],
+      duplicates: ["test1@example.com", "test1@example.com"],
+      invalid: [],
+    });
+  });
+
+  test("correctly handles invalid email addresses", async () => {
+    mockReadSheet.mockResolvedValueOnce([
+      ["Header1", "Header2", "Header3"],
+      ["data1", "not-an-email", "other1"],
+      ["data2", "test1@example.com", "other2"],
+      ["data3", "@example.com", "other3"],
+      ["data4", "test2@", "other4"],
+    ]);
+
+    const data = { spreadsheet, column: "B", row: 2 };
+    const emails = await extractEmails(data);
+
+    expect(emails).toEqual({
+      valid: ["test1@example.com"],
+      duplicates: [],
+      invalid: ["not-an-email", "@example.com", "test2@"],
+    });
   });
 });

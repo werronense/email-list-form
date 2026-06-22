@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { isValidEmail } from "@/utils/emails";
+import { validateEmail } from "@/utils/emails";
 
 describe("isValidEmail", () => {
   const validEmails = [
@@ -12,7 +12,7 @@ describe("isValidEmail", () => {
   test.each(validEmails)(
     "returns true for valid email address: %s",
     (email) => {
-      expect(isValidEmail(email)).toBe(true);
+      expect(validateEmail(email)).toBe(true);
     },
   );
 
@@ -34,7 +34,7 @@ describe("isValidEmail", () => {
   test.each(invalidEmails)(
     "returns false for invalid email address: %s",
     (email) => {
-      expect(isValidEmail(email)).toBe(false);
+      expect(validateEmail(email)).toBe(false);
     },
   );
 });
