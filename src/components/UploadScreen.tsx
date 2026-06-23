@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Upload } from "lucide-react";
 import { extractEmails } from "@/utils/spreadsheet.ts";
+import { type UploadedEmails } from "@/types/email";
 
 const SPREADSHEET_TYPES = [
   "application/vnd.ms-excel",
@@ -31,14 +32,11 @@ const formSchema = z.object({
 type SchemaInput = z.input<typeof formSchema>;
 type SchemaOutput = z.output<typeof formSchema>;
 
-const onSubmit = async (data: SchemaOutput) => {
-  const emails = await extractEmails(data);
-
-  // todo: delete log statement
-  console.log({ emails });
+type UploadScreenProps = {
+  setEmails: (emails: UploadedEmails | null) => void;
 };
 
-export default function UploadScreen() {
+export default function UploadScreen({ setEmails }: UploadScreenProps) {
   const form = useForm<SchemaInput, any, SchemaOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -47,6 +45,11 @@ export default function UploadScreen() {
       row: 1,
     },
   });
+
+  const onSubmit = async (data: SchemaOutput) => {
+    const emails = await extractEmails(data);
+    setEmails(emails);
+  };
 
   return (
     <form className={"space-y-4"} onSubmit={form.handleSubmit(onSubmit)}>
